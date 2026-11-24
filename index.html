@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080a">
+<title>Roxxo · modo box</title>
+<style>
+  :root {
+    --fundo: #07080a; --sup: #111216; --sup2: #191a1f; --sup3: #202127; --linha: #24252b; --linha-forte: #34363e;
+    --tinta: #f5f5f7; --tinta2: #9a9ca6; --tinta3: #6f717b;
+    --roxo: #b57cff; --verde: #3ee07f; --vermelho: #ff5c7a; --amarelo: #ffc93a; --ciano: #22d3ff; --azul: #5b9dff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fundo); color: var(--tinta); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 13px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
+  }
+  .n { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .marca { font-weight: 900; letter-spacing: .4px; font-size: 15px; }
+  .marca b { color: var(--roxo); }
+  .onde { color: var(--tinta2); font-size: 12px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px;
+          font-size: 11px; font-weight: 800; background: var(--sup2); color: var(--tinta2); white-space: nowrap; }
+  .chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: block; }
+  .chip.vivo { color: var(--verde); background: rgba(62,224,127,.12); }
+  .chip.vivo i { animation: pulso 1.4s infinite; }
+  .chip.alerta { color: var(--amarelo); background: rgba(255,201,58,.12); }
+  .chip.erro { color: var(--vermelho); background: rgba(255,92,122,.12); }
+  @keyframes pulso { 50% { opacity: .3; } }
+
+  /* grade: celular empilha; tablet 2 colunas; PC 3 colunas numa tela só */
+  .grade { display: grid; gap: 10px; grid-template-columns: 1fr;
+           grid-template-areas: "volta" "carro" "mapa" "pedais" "pneus" "radio"; }
+  .a-volta { grid-area: volta; } .a-carro { grid-area: carro; } .a-mapa { grid-area: mapa; }
+  .a-pedais { grid-area: pedais; } .a-pneus { grid-area: pneus; } .a-radio { grid-area: radio; }
+  @media (min-width: 720px) {
+    .grade { grid-template-columns: 1fr 1fr;
+             grid-template-areas: "volta carro" "mapa carro" "mapa pneus" "pedais radio"; }
+  }
+  @media (min-width: 1100px) {
+    body { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .grade { flex: 1; min-height: 0; grid-template-columns: 1.15fr 1fr 1fr;
+             grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+             grid-template-areas: "volta carro mapa" "pedais carro mapa" "pedais pneus radio"; }
+    .card { min-height: 0; }
+    .a-mapa, .a-radio, .a-pedais, .a-carro { display: flex; flex-direction: column; }
+    .a-mapa canvas, .a-pedais .cresce { flex: 1; min-height: 0; height: auto; }
+    .a-radio .falas { flex: 1; min-height: 0; overflow: hidden; }
+  }
+  .card { background: var(--sup); border: 1px solid var(--linha); border-radius: 14px; padding: 10px 12px; min-width: 0; }
+  .tit { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 800; color: var(--tinta2);
+         text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+  .tit::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--roxo); }
+  .tit span { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--tinta3); }
+  .rot { color: var(--tinta3); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* tempos: setores e volta */
+  .tit span.selo { color: var(--tinta); font-weight: 800; font-size: 11.5px; }
+  .tit span.selo.roxo { color: var(--roxo); }
+  .tit span.selo.ruim { color: var(--vermelho); }
+  .setores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .st { border: 1.5px solid var(--linha-forte); background: var(--sup2); border-radius: 11px; padding: 7px 9px 8px;
+        min-width: 0; transition: border-color .25s, background .25s; }
+  .st .cab { display: flex; justify-content: space-between; gap: 4px; font-size: 10.5px; font-weight: 700; color: var(--tinta2); }
+  .st .cab em { font-style: normal; font-weight: 800; color: var(--amarelo); white-space: nowrap; }
+  .st b { display: block; font-size: clamp(16px, 4.6vw, 21px); font-weight: 800; margin-top: 4px; letter-spacing: -.3px;
+          white-space: nowrap; color: var(--tinta3); }
+  .st.roxo { border-color: rgba(181,124,255,.85); background: rgba(181,124,255,.13); box-shadow: 0 0 14px rgba(181,124,255,.16); }
+  .st.roxo b { color: var(--roxo); }
+  .st.amarelo { border-color: rgba(255,201,58,.65); background: rgba(255,201,58,.07); }
+  .st.amarelo b { color: var(--amarelo); }
+  .st.vivo { border-color: var(--tinta3); }
+  .st.vivo b { color: var(--tinta); }
+  .st.invalido b { color: var(--tinta2); text-decoration: line-through rgba(255,92,122,.8) 1.5px; }
+  .volta-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 10px;
+                 padding-top: 9px; border-top: 1px solid var(--linha); }
+  .volta-linha .rotulo { color: var(--tinta2); font-size: 12px; font-weight: 600; display: block; margin-bottom: 5px; }
+  .tempo { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -.5px; white-space: nowrap; }
+  .tempo.roxo { color: var(--roxo); } .tempo.amarelo { color: var(--amarelo); }
+  .delta { display: inline-block; font-size: 14px; font-weight: 800; padding: 2px 8px; border-radius: 8px; background: var(--sup2); color: var(--tinta2); }
+  .delta.ganho { color: var(--verde); background: rgba(62,224,127,.12); }
+  .delta.perde { color: var(--vermelho); background: rgba(255,92,122,.12); }
+  canvas.delta-linha { width: 100%; height: 44px; display: block; margin-top: 8px; }
+  .citacao { display: none; gap: 8px; align-items: flex-start; margin-top: 9px; font-size: 12.5px; color: var(--tinta2); line-height: 1.35; }
+  .orbe { flex: none; width: 16px; height: 16px; border-radius: 50%; margin-top: 1px;
+          background: radial-gradient(circle at 40% 35%, #e9fcff, var(--ciano) 45%, #1a6cff 85%); box-shadow: 0 0 10px rgba(34,211,255,.55); }
+  .tabela { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+  .tabela b { display: block; font-size: 13px; font-weight: 700; margin-top: 1px; white-space: nowrap; }
+
+  /* carro */
+  .painel { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .vel { font-size: 30px; font-weight: 800; line-height: 1; }
+  .vel small { font-size: 11px; color: var(--tinta3); font-weight: 700; margin-left: 3px; }
+  .marcha { width: 46px; height: 46px; border-radius: 12px; background: var(--sup2); display: grid; place-items: center;
+            font-size: 28px; font-weight: 800; }
+  .luzes-rpm { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 7px; }
+  .luzes-rpm i { height: 6px; border-radius: 2px; background: var(--sup3); }
+  .entradas { display: grid; grid-template-columns: auto auto 1fr; gap: 12px; margin-top: 12px; align-items: stretch; }
+  .pedal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .pedal b { font-size: 12px; font-weight: 700; }
+  .pedal .trilho { flex: 1; width: 14px; min-height: 70px; border-radius: 4px; background: var(--sup3); position: relative; overflow: hidden; }
+  .pedal .cheio { position: absolute; left: 0; right: 0; bottom: 0; height: 0; }
+  .lado { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .volante-barra { position: relative; height: 10px; border-radius: 5px; background: var(--sup3); }
+  .volante-barra::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--linha-forte); }
+  .volante-barra i { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: var(--ciano); }
+  .eletro { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .eletro div { background: var(--sup2); border-radius: 8px; padding: 5px 7px; }
+  .eletro b { display: block; font-size: 14px; font-weight: 800; white-space: nowrap; }
+  .eletro .rot { white-space: nowrap; }
+  .eletro div.on { background: var(--amarelo); color: #0a0b0c; }
+  .eletro div.on .rot { color: #3a2e00; }
+
+  canvas.grafico { width: 100%; height: 120px; display: block; }
+  canvas.mapa { width: 100%; height: 260px; display: block; }
+  .legenda { display: flex; gap: 12px; font-size: 11px; color: var(--tinta2); margin-top: 6px; flex-wrap: wrap; }
+  .legenda i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+
+  /* pneus: em forma de carro */
+  .carro-pneus { display: grid; grid-template-columns: 1fr 34px 1fr; gap: 6px; align-items: stretch; }
+  .chassi { grid-row: 1 / span 2; grid-column: 2; border: 1px solid var(--linha-forte); border-radius: 12px; }
+  .pneu { background: var(--sup2); border-radius: 9px; padding: 6px 8px; border-left: 3px solid var(--sup3); }
+  .pneu .rot { display: block; margin-bottom: 2px; }
+  .pneu .linha { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--tinta2); }
+  .pneu .linha b { color: var(--tinta); font-size: 13.5px; font-weight: 700; }
+  .ok { color: var(--verde) !important; } .frio { color: var(--azul) !important; } .quente { color: var(--vermelho) !important; }
+  .combustivel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .combustivel div { background: var(--sup2); border-radius: 9px; padding: 6px 8px; }
+  .combustivel b { display: block; font-size: 14px; font-weight: 800; }
+
+  .falas { display: flex; flex-direction: column; gap: 6px; }
+  .fala { padding: 7px 9px; border-radius: 10px; background: var(--sup2); font-size: 12.5px; line-height: 1.35; }
+  .fala.engenheiro { background: rgba(34,211,255,.07); border: 1px solid rgba(34,211,255,.22); }
+  .fala small { display: block; font-size: 10px; font-weight: 800; color: var(--tinta3); margin-bottom: 2px;
+                text-transform: uppercase; letter-spacing: .4px; }
+  .fala.engenheiro small { color: var(--ciano); }
+  .vazio { color: var(--tinta3); font-size: 12px; }
+
+  .aviso { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 10px 12px;
+           border-radius: 12px; background: rgba(255,92,122,.14); border: 1px solid rgba(255,92,122,.4);
+           color: #ffc2cd; font-size: 13px; font-weight: 700; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">R<b>o</b>xxo</div>
+  <div class="onde" id="onde">modo box</div>
+  <div class="chip" id="chip"><i></i><span>Conectando</span></div>
+</header>
+
+<main class="grade">
+  <section class="card a-volta">
+    <div class="tit"><b id="volta-nome" style="font-weight:800">Tempos</b><span class="selo" id="selo"></span></div>
+    <div class="setores">
+      <div class="st" id="st0"><div class="cab"><span>S1</span><em></em></div><b class="n">—</b></div>
+      <div class="st" id="st1"><div class="cab"><span>S2</span><em></em></div><b class="n">—</b></div>
+      <div class="st" id="st2"><div class="cab"><span>S3</span><em></em></div><b class="n">—</b></div>
+    </div>
+    <div class="volta-linha">
+      <div><span class="rotulo" id="tempo-rot">Tempo de volta</span>
+        <span class="delta n" id="delta" title="Contra a sua melhor volta gravada neste carro e pista">±0,00</span></div>
+      <div class="tempo n" id="tempo">-:--.-</div>
+    </div>
+    <canvas class="delta-linha" id="delta-linha"></canvas>
+    <div class="tabela">
+      <div><span class="rot">Última</span><b class="n" id="ultima">—</b></div>
+      <div><span class="rot">Melhor</span><b class="n" id="melhor">—</b></div>
+      <div><span class="rot">Ideal</span><b class="n" id="ideal" title="A soma dos seus melhores setores nesta sessão">—</b></div>
+      <div><span class="rot">Ref.</span><b class="n" id="ref" title="A melhor volta gravada, usada no delta">—</b></div>
+      <div><span class="rot">Pos.</span><b class="n" id="posicao">—</b></div>
+    </div>
+    <div class="citacao" id="citacao"><i class="orbe"></i><span id="citacao-txt"></span></div>
+  </section>
+
+  <section class="card a-carro">
+    <div class="tit">Carro <span id="rpm-txt" class="n"></span></div>
+    <div class="painel">
+      <div>
+        <div class="vel n" id="vel">0<small>km/h</small></div>
+        <div class="luzes-rpm" id="luzes"></div>
+      </div>
+      <div class="marcha n" id="marcha">N</div>
+    </div>
+    <div class="entradas">
+      <div class="pedal"><b class="n" id="v-freio">0%</b><div class="trilho"><div class="cheio" id="p-freio" style="background:var(--roxo)"></div></div><span class="rot">Freio</span></div>
+      <div class="pedal"><b class="n" id="v-acel">0%</b><div class="trilho"><div class="cheio" id="p-acel" style="background:var(--verde)"></div></div><span class="rot">Acel.</span></div>
+      <div class="lado">
+        <div><div style="display:flex;justify-content:space-between"><span class="rot">Volante</span><b class="n" id="v-vol" style="font-size:12px">0%</b></div>
+          <div class="volante-barra" style="margin-top:5px"><i id="p-vol"></i></div></div>
+        <div class="eletro">
+          <div id="l-abs"><span class="rot">ABS</span><b class="n" id="abs-n">—</b></div>
+          <div id="l-tc"><span class="rot">TC</span><b class="n" id="tc-n">—</b></div>
+          <div><span class="rot">Mapa</span><b class="n" id="mapa-n">—</b></div>
+        </div>
+        <div class="eletro">
+          <div style="grid-column: span 3"><span class="rot">Freios °C</span><b class="n" id="freios">—</b></div>
+        </div>
+        <div class="eletro" title="Medido aqui no celular, a partir da leitura ao vivo">
+          <div><span class="rot">Máx km/h</span><b class="n" id="vmax">—</b></div>
+          <div><span class="rot">Mín km/h</span><b class="n" id="vmin">—</b></div>
+          <div><span class="rot">Pico freio</span><b class="n" id="pico">—</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card a-mapa">
+    <div class="tit">Mapa <span id="mapa-info"></span></div>
+    <canvas class="mapa" id="mapa"></canvas>
+  </section>
+
+  <section class="card a-pedais">
+    <div class="tit">Pedais e volante <span>últimos 10 s</span></div>
+    <canvas class="grafico cresce" id="grafico"></canvas>
+    <div class="legenda">
+      <span><i style="background:var(--roxo)"></i>Freio</span>
+      <span><i style="background:var(--verde)"></i>Acelerador</span>
+      <span><i style="background:var(--ciano)"></i>Volante</span>
+    </div>
+  </section>
+
+  <section class="card a-pneus">
+    <div class="tit">Pneus <span id="composto"></span></div>
+    <div class="carro-pneus" id="pneus">
+      <div class="pneu" data-i="0"></div><div class="chassi"></div><div class="pneu" data-i="1"></div>
+      <div class="pneu" data-i="2"></div><div class="pneu" data-i="3"></div>
+    </div>
+    <div class="combustivel">
+      <div><span class="rot">Combustível</span><b class="n" id="comb">—</b></div>
+      <div><span class="rot">Por volta</span><b class="n" id="comb-volta">—</b></div>
+      <div><span class="rot">Dá para</span><b class="n" id="comb-voltas">—</b></div>
+    </div>
+  </section>
+
+  <section class="card a-radio">
+    <div class="tit">Rádio</div>
+    <div class="falas" id="falas"><div class="vazio">O que o engenheiro e o piloto falarem aparece aqui.</div></div>
+  </section>
+</main>
+<div class="aviso" id="aviso">Sem conexão com o PC. Confira se o app está aberto e se o celular está no mesmo Wi-Fi.</div>
+
+<script>
+"use strict";
+const codigo = new URLSearchParams(location.search).get("c") || "";
+// Pela internet: o link é ".../#sala=XXXX" e os dados chegam pelo servidor da Roxxo (canal ao vivo).
+const SALA = new URLSearchParams(location.hash.slice(1)).get("sala") || "";
+const SUPA_URL = "https://ggtxoumdligkecjdytrc.supabase.co";
+const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdndHhvdW1kbGlna2VjamR5dHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUxMzExMjgsImV4cCI6MjExMDcwNzEyOH0.AG690iECPyyasrz_xKH88FK3a6QIR3a9Eh_UQxBrDi0";  // chave pública do projeto (a mesma da página do gestor)
+const $ = (id) => document.getElementById(id);
+const COR = { roxo: "#b57cff", verde: "#3ee07f", ciano: "#22d3ff", linha: "#24252b", linhaForte: "#34363e",
+              tinta: "#f5f5f7", tinta2: "#9a9ca6", tinta3: "#6f717b", vermelho: "#ff5c7a", amarelo: "#ffc93a" };
+const NOMES_PNEU = ["Diant. esq.", "Diant. dir.", "Tras. esq.", "Tras. dir."];
+const LUZES = 12;
+for (let i = 0; i < LUZES; i++) $("luzes").append(document.createElement("i"));
+
+function tempo(ms, casas = 3) {
+  if (!ms || ms <= 0 || ms > 3.6e6) return "—";
+  const m = Math.floor(ms / 60000), s = (ms % 60000) / 1000;
+  return m + ":" + s.toFixed(casas).padStart(casas + 3, "0");
+}
+const virgula = (v, c = 1) => v.toFixed(c).replace(".", ",");
+function bonito(id) {
+  return (id || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bGt(\d)\b/g, "GT$1");
+}
+function canvasPronto(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  return [ctx, r.width, r.height];
+}
+
+/* ------------------------------------------------------------ delta ao longo da volta */
+let deltaVolta = [], deltaAnterior = [], ultimaPos = 0, mostrandoFechada = false;
+function desenharDelta() {
+  const pts = mostrandoFechada && deltaAnterior.length ? deltaAnterior : deltaVolta;
+  const [ctx, w, h] = canvasPronto($("delta-linha"));
+  const meio = h / 2;
+  ctx.strokeStyle = COR.linha; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, meio); ctx.lineTo(w, meio); ctx.stroke();
+  ctx.fillStyle = COR.tinta3; ctx.font = "600 10px system-ui"; ctx.textAlign = "left";
+  if (pts.length < 2) { ctx.fillText("o delta da volta vai sendo desenhado aqui", 4, meio - 5); return; }
+  const maxAbs = Math.max(500, ...pts.map((p) => Math.abs(p.d)));
+  const yv = (d) => meio - (d / maxAbs) * (meio - 4);  // perdendo (+) para cima, ganhando (−) para baixo
+  for (const [sinal, cor] of [[1, "rgba(255,92,122,.28)"], [-1, "rgba(62,224,127,.28)"]]) {
+    ctx.beginPath(); ctx.moveTo(pts[0].p * w, meio);
+    for (const p of pts) ctx.lineTo(p.p * w, yv(sinal > 0 ? Math.max(0, p.d) : Math.min(0, p.d)));
+    ctx.lineTo(pts[pts.length - 1].p * w, meio); ctx.closePath();
+    ctx.fillStyle = cor; ctx.fill();
+  }
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p.p * w, yv(p.d)) : ctx.moveTo(p.p * w, yv(p.d))));
+  ctx.strokeStyle = COR.tinta2; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.fillStyle = COR.tinta3; ctx.textAlign = "right";
+  ctx.fillText("+" + virgula(maxAbs / 1000, 1) + " s", w - 2, 10);
+  ctx.fillText("−" + virgula(maxAbs / 1000, 1) + " s", w - 2, h - 2);
+}
+
+/* ------------------------------------------------------------ gráfico dos pedais */
+const historico = [];
+function desenharGrafico() {
+  const [ctx, w, h] = canvasPronto($("grafico"));
+  const agora = performance.now(), janela = 10000;
+  ctx.strokeStyle = COR.linha; ctx.lineWidth = 1;
+  for (const v of [0, 0.5, 1]) {
+    const y = 3 + (h - 6) * (1 - v);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  const serie = (chave, cor, larg, f = (v) => v) => {
+    ctx.beginPath(); let primeiro = true;
+    for (const a of historico) {
+      const x = w - (agora - a.t) / janela * w;
+      if (x < -2) continue;
+      const y = 3 + (h - 6) * (1 - f(a[chave]));
+      if (primeiro) { ctx.moveTo(x, y); primeiro = false; } else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = cor; ctx.lineWidth = larg; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke();
+  };
+  serie("volante", COR.ciano, 1.2, (v) => Math.min(1, Math.abs(v)));
+  serie("acel", COR.verde, 1.8);
+  serie("freio", COR.roxo, 2);
+}
+
+/* ------------------------------------------------------------ mapa */
+let mapa = { pontos: [], curvas: [] }, mapaChave = "", mapaPedido = 0;
+async function carregarMapa(chave) {
+  mapaPedido = Date.now();
+  try {
+    const r = await fetch("/mapa?c=" + encodeURIComponent(codigo), { cache: "no-store" });
+    if (r.ok) { mapa = await r.json(); mapaChave = chave; }
+  } catch (_) {}
+  $("mapa-info").textContent = mapa.pontos.length ? "linha: sua melhor volta" : "";
+}
+function desenharMapa(e) {
+  const [ctx, w, h] = canvasPronto($("mapa"));
+  const pts = mapa.pontos;
+  if (!pts.length) {
+    ctx.fillStyle = COR.tinta3; ctx.font = "12px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("O mapa aparece depois da primeira volta", w / 2, h / 2 - 7);
+    ctx.fillText("válida gravada neste carro e pista.", w / 2, h / 2 + 10);
+    return;
+  }
+  let mx = Infinity, my = Infinity, Mx = -Infinity, My = -Infinity;
+  for (const [x, y] of pts) { mx = Math.min(mx, x); my = Math.min(my, y); Mx = Math.max(Mx, x); My = Math.max(My, y); }
+  const pad = 18, k = Math.min((w - 2 * pad) / ((Mx - mx) || 1), (h - 2 * pad) / ((My - my) || 1));
+  const ox = (w - (Mx - mx) * k) / 2, oy = (h - (My - my) * k) / 2;
+  const P = (x, y) => [ox + (x - mx) * k, oy + (y - my) * k];
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath(); pts.forEach(([x, y], i) => { const [a, b] = P(x, y); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); });
+  ctx.strokeStyle = COR.linhaForte; ctx.lineWidth = 7; ctx.stroke();
+  ctx.strokeStyle = "rgba(181,124,255,.5)"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.font = "600 10.5px system-ui"; ctx.textAlign = "center";
+  for (const c of mapa.curvas || []) {
+    const [a, b] = P(c.x, c.y);
+    ctx.fillStyle = COR.tinta3; ctx.beginPath(); ctx.arc(a, b, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = COR.tinta2; ctx.fillText(c.nome, a, b - 7);
+  }
+  if (e && e.jogo === "pista" && (e.x || e.y)) {
+    const [a, b] = P(e.x, e.y);
+    ctx.fillStyle = "rgba(181,124,255,.3)"; ctx.beginPath(); ctx.arc(a, b, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = COR.tinta; ctx.strokeStyle = COR.roxo; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(a, b, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+}
+
+/* ------------------------------------------------------------ números da curva (medidos aqui) */
+let vmax = 0, emCurva = false, vminAtual = 0, picoAtual = 0;
+function curva(e, freio, acel) {
+  const vel = e.vel || 0;
+  if ((e.pos || 0) < 0.01) vmax = 0;
+  vmax = Math.max(vmax, vel);
+  if (!emCurva && freio > 0.1) { emCurva = true; vminAtual = vel; picoAtual = freio; }
+  if (emCurva) {
+    vminAtual = Math.min(vminAtual, vel); picoAtual = Math.max(picoAtual, freio);
+    if (acel >= 0.95 && freio <= 0.1) {  // saiu da curva: mostra o que mediu
+      emCurva = false;
+      $("vmin").textContent = String(vminAtual);
+      $("pico").textContent = Math.round(picoAtual * 100) + "%";
+    }
+  }
+  $("vmax").textContent = vmax ? String(vmax) : "—";
+}
+
+/* ------------------------------------------------------------ faixas dos pneus (GT3, seco) */
+const faixa = (v, baixo, alto) => (v <= 0 ? "" : v < baixo ? "frio" : v > alto ? "quente" : "ok");
+
+/* ------------------------------------------------------------ tempos: setores e volta */
+const MOSTRA_FECHADA_S = 8;  // depois de cruzar a linha, a volta fechada fica na tela esse tempo
+function seg(ms, casas = 3) {
+  if (ms === null || ms === undefined || ms < 0) return "—";
+  if (ms >= 60000) return tempo(ms, casas);
+  return (ms / 1000).toFixed(casas);
+}
+function mostrarTempos(e) {
+  const S = e.setores;
+  const melhores = S ? S.melhores : [null, null, null];
+  const fechada = !!(S && S.ultima && S.ultima_ha_s !== null && S.ultima_ha_s < MOSTRA_FECHADA_S);
+  let valores = [null, null, null], valida = e.valida !== false, vivo = null, inteira = true;
+  if (fechada) { valores = S.ultima.setores; valida = S.ultima.valida; inteira = S.ultima.inteira !== false; }
+  else if (S) { valores = S.atual; valida = S.valida; vivo = S.setor; inteira = S.inteira !== false; }
+  else if (e.setor) vivo = e.setor - 1;
+  let roxos = 0;
+  for (let k = 0; k < 3; k++) {
+    const el = $("st" + k), t = valores[k], m = melhores[k];
+    let cls = "st", txt = "—", dif = "";
+    if (t !== null && t !== undefined) {
+      txt = seg(t);
+      if (!inteira) cls += "";
+      else if (!valida) cls += " invalido";
+      else if (m === null || t <= m) { cls += " roxo"; roxos++; }
+      else { cls += " amarelo"; dif = "+" + seg(t - m); }
+    } else if (k === vivo && e.jogo === "pista") {
+      cls += " vivo";
+      txt = S && S.inicio_ms !== null && e.volta_ms ? seg(Math.max(0, e.volta_ms - S.inicio_ms), 1) : "…";
+    }
+    el.className = cls;
+    el.querySelector("b").textContent = txt;
+    el.querySelector("em").textContent = dif;
+  }
+  // selo do canto e o tempo grande
+  const selo = $("selo"), tg = $("tempo");
+  let seloTxt = "", seloCls = "selo";
+  if (fechada) {
+    const t = S.ultima.tempo, mv = S.melhor_volta;
+    $("tempo-rot").textContent = "Volta fechada";
+    tg.textContent = tempo(t);
+    tg.className = "tempo n " + (!valida ? "" : mv && t <= mv ? "roxo" : "amarelo");
+    if (!inteira) seloTxt = "Volta incompleta";
+    else if (!valida) { seloTxt = "Volta inválida"; seloCls += " ruim"; }
+    else if (roxos === 3) { seloTxt = "Volta roxa"; seloCls += " roxo"; }
+    else if (mv && t <= mv) { seloTxt = "Melhor volta"; seloCls += " roxo"; }
+    else if (mv && t) seloTxt = "+" + seg(t - mv) + " da melhor";
+  } else {
+    $("tempo-rot").textContent = "Tempo de volta";
+    tg.textContent = e.volta_ms ? tempo(e.volta_ms, 1) : "-:--.-";
+    tg.className = "tempo n";
+    if (e.jogo === "pista" && S && S.setor !== null && !inteira) seloTxt = "Volta de saída";
+    else if (e.jogo === "pista" && !valida && S && S.setor !== null) { seloTxt = "Volta inválida"; seloCls += " ruim"; }
+    else if (e.jogo === "pista" && e.setor) seloTxt = "Setor " + e.setor;
+  }
+  selo.textContent = seloTxt; selo.className = seloCls;
+  mostrandoFechada = fechada;
+  $("volta-nome").textContent = e.voltas !== undefined && e.jogo !== "desligado"
+    ? "Volta " + (e.voltas + (fechada ? 0 : 1)) : "Tempos";
+  // a última fala do engenheiro, como legenda da tela
+  const ultimaFala = (e.conversa || []).filter((f) => f.quem === "engenheiro").pop();
+  $("citacao").style.display = ultimaFala ? "flex" : "none";
+  if (ultimaFala) $("citacao-txt").textContent = "\u201c" + ultimaFala.texto + "\u201d";
+}
+
+/* ------------------------------------------------------------ tela */
+let ultimoConteudoFalas = "";
+function mostrar(e) {
+  const chip = $("chip"), txt = chip.querySelector("span");
+  const estados = { pista: ["vivo", "Ao vivo"], pausa: ["alerta", "Pausado"], replay: ["alerta", "Replay"],
+                    menu: ["", "No menu"], desligado: ["", "Esperando o ACC"] };
+  const [classe, rotulo] = estados[e.jogo] || ["", "Esperando o ACC"];
+  chip.className = "chip " + classe; txt.textContent = rotulo;
+  $("onde").textContent = e.pista ? bonito(e.pista) + " · " + bonito(e.carro) : "modo box";
+  if (e.pista) {
+    const chave = e.pista + "|" + e.carro + "|" + (e.ref_ms || "");
+    if (!SALA && chave !== mapaChave && Date.now() - mapaPedido > 5000) carregarMapa(chave);
+  }
+
+  // tempos
+  mostrarTempos(e);
+  const d = $("delta");
+  const fim = mostrandoFechada && e.setores.ultima.tempo && e.ref_ms ? e.setores.ultima.tempo - e.ref_ms : null;
+  if (fim !== null) {  // volta fechada: o delta final dela contra a referência
+    d.textContent = (fim > 0 ? "+" : fim < 0 ? "−" : "±") + virgula(Math.abs(fim) / 1000, 2);
+    d.className = "delta n " + (fim < 0 ? "ganho" : fim > 0 ? "perde" : "");
+  } else if (e.delta_ms === null || e.delta_ms === undefined) {
+    d.textContent = e.ref_ms ? "±0,00" : "sem ref."; d.className = "delta n";
+  } else {
+    d.textContent = (e.delta_ms > 0 ? "+" : e.delta_ms < 0 ? "−" : "±") + virgula(Math.abs(e.delta_ms) / 1000, 2);
+    d.className = "delta n " + (e.delta_ms < 0 ? "ganho" : e.delta_ms > 0 ? "perde" : "");
+  }
+  const pos = e.pos || 0;
+  if (pos + 0.5 < ultimaPos) { deltaAnterior = deltaVolta; deltaVolta = []; }  // começou volta nova
+  ultimaPos = pos;
+  if (e.jogo === "pista" && e.delta_ms !== null && e.delta_ms !== undefined) {
+    const ult = deltaVolta[deltaVolta.length - 1];
+    if (!ult || pos - ult.p > 0.002) deltaVolta.push({ p: pos, d: e.delta_ms });
+  }
+  desenharDelta();
+  $("ultima").textContent = tempo(e.ultima_ms);
+  $("melhor").textContent = tempo(e.melhor_ms);
+  $("ideal").textContent = tempo(e.setores && e.setores.ideal);
+  $("ref").textContent = tempo(e.ref_ms);
+  $("posicao").textContent = e.posicao ? "P" + e.posicao : "—";
+
+  // carro
+  $("vel").innerHTML = (e.vel || 0) + "<small>km/h</small>";
+  $("marcha").textContent = e.marcha === undefined ? "N" : e.marcha < 0 ? "R" : e.marcha === 0 ? "N" : String(e.marcha);
+  const frac = e.rpm_max ? Math.min(1, e.rpm / e.rpm_max) : 0;
+  $("rpm-txt").textContent = e.rpm ? e.rpm.toLocaleString("pt-BR") + " rpm" : "";
+  const acesas = Math.round(Math.max(0, (frac - 0.55) / 0.42) * LUZES);
+  [...$("luzes").children].forEach((l, i) => {
+    const cor = i < 5 ? COR.verde : i < 9 ? COR.amarelo : COR.vermelho;
+    l.style.background = i < acesas ? (frac > 0.97 ? COR.ciano : cor) : "";
+  });
+  // o "blip" automático das reduções não é o pé do piloto: freando, o acelerador fica em zero
+  const freio = e.freio || 0;
+  const acel = freio > 0.1 ? 0 : (e.acel || 0);
+  $("p-freio").style.height = (freio * 100).toFixed(1) + "%";
+  $("p-acel").style.height = (acel * 100).toFixed(1) + "%";
+  $("v-freio").textContent = Math.round(freio * 100) + "%";
+  $("v-acel").textContent = Math.round(acel * 100) + "%";
+  const vol = Math.max(-1, Math.min(1, e.volante || 0));
+  const pv = $("p-vol");
+  pv.style.left = (vol < 0 ? 50 + vol * 50 : 50) + "%";
+  pv.style.width = Math.abs(vol) * 50 + "%";
+  $("v-vol").textContent = (vol < 0 ? "◀ " : vol > 0 ? "▶ " : "") + Math.round(Math.abs(vol) * 100) + "%";
+  $("l-abs").className = e.abs ? "on" : ""; $("l-tc").className = e.tc ? "on" : "";
+  $("abs-n").textContent = e.abs_nivel ?? "—"; $("tc-n").textContent = e.tc_nivel ?? "—";
+  $("mapa-n").textContent = e.mapa_motor ?? "—";
+  $("freios").textContent = e.freios_c && e.freios_c.some((v) => v > 0) ? e.freios_c.join(" · ") : "—";
+
+  if (e.jogo === "pista") {
+    curva(e, freio, acel);
+    historico.push({ t: performance.now(), freio, acel, volante: vol });
+    while (historico.length && performance.now() - historico[0].t > 11000) historico.shift();
+  }
+  desenharGrafico();
+  desenharMapa(e);
+
+  // pneus
+  $("composto").textContent = e.composto ? e.composto : "";
+  document.querySelectorAll(".pneu").forEach((el) => {
+    const i = +el.dataset.i, psi = (e.pneus_psi || [])[i] || 0, c = (e.pneus_c || [])[i] || 0;
+    if (!el.firstChild) el.innerHTML = "<span class='rot'></span><div class='linha'><b class='n psi'></b><span class='n tc'></span></div>";
+    el.querySelector(".rot").textContent = NOMES_PNEU[i];
+    const fp = faixa(psi, 25.5, 27.8), ft = faixa(c, 65, 95);
+    el.querySelector(".psi").textContent = psi ? virgula(psi) + " psi" : "—";
+    el.querySelector(".psi").className = "n psi " + fp;
+    el.querySelector(".tc").textContent = c ? c + " °C" : "";
+    el.querySelector(".tc").className = "n tc " + ft;
+    el.style.borderLeftColor = fp === "ok" ? "var(--verde)" : fp === "frio" ? "var(--azul)" : fp === "quente" ? "var(--vermelho)" : "";
+  });
+  $("comb").textContent = e.combustivel ? virgula(e.combustivel) + " L" : "—";
+  $("comb-volta").textContent = e.comb_volta ? virgula(e.comb_volta, 2) + " L" : "—";
+  $("comb-voltas").textContent = e.voltas_comb ? Math.floor(e.voltas_comb) + " voltas" : "—";
+
+  // rádio
+  const conversa = e.conversa || [];
+  const chaveFalas = JSON.stringify(conversa);
+  if (chaveFalas !== ultimoConteudoFalas) {
+    ultimoConteudoFalas = chaveFalas;
+    const box = $("falas");
+    box.replaceChildren();
+    if (!conversa.length) {
+      const v = document.createElement("div"); v.className = "vazio";
+      v.textContent = "O que o engenheiro e o piloto falarem aparece aqui."; box.append(v);
+    }
+    for (const f of conversa.slice().reverse()) {
+      const div = document.createElement("div"); div.className = "fala " + f.quem;
+      const sm = document.createElement("small");
+      sm.textContent = (f.quem === "piloto" ? "Piloto" : "Engenheiro") + " · " + f.hora;
+      div.append(sm, document.createTextNode(f.texto));
+      box.append(div);
+    }
+  }
+}
+
+/* ------------------------------------------------------------ laço */
+let falhas = 0;
+async function puxar() {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 1500);
+  try {
+    const r = await fetch("/estado?c=" + encodeURIComponent(codigo), { cache: "no-store", signal: ctrl.signal });
+    if (!r.ok) throw new Error(r.status);
+    mostrar(await r.json());
+    falhas = 0; $("aviso").style.display = "none";
+  } catch (_) {
+    falhas++;
+    if (falhas > 4) {
+      $("aviso").style.display = "block";
+      const chip = $("chip"); chip.className = "chip erro"; chip.querySelector("span").textContent = "Sem conexão";
+    }
+  } finally {
+    clearTimeout(t);
+    setTimeout(puxar, falhas > 4 ? 1500 : 100);
+  }
+}
+window.addEventListener("resize", () => { desenharGrafico(); desenharMapa(null); desenharDelta(); });
+
+/* ------------------------------------------------------------ pela internet (servidor da Roxxo) */
+function avisar(texto) {
+  $("aviso").textContent = texto; $("aviso").style.display = texto ? "block" : "none";
+}
+function pelaInternet() {
+  let ultimoDado = 0, pilotoOnline = false;
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+  s.onerror = () => avisar("Não deu para carregar a página. Confira a internet e recarregue.");
+  s.onload = () => {
+    const sb = supabase.createClient(SUPA_URL, SUPA_ANON);
+    const eu = "v-" + Math.random().toString(36).slice(2, 10);
+    const canal = sb.channel("box-" + SALA, { config: { presence: { key: eu }, broadcast: { self: false } } });
+    canal
+      .on("broadcast", { event: "estado" }, ({ payload }) => { ultimoDado = Date.now(); avisar(""); mostrar(payload); })
+      .on("broadcast", { event: "mapa" }, ({ payload }) => {
+        mapa = payload || { pontos: [], curvas: [] };
+        $("mapa-info").textContent = mapa.pontos && mapa.pontos.length ? "linha: sua melhor volta" : "";
+      })
+      .on("presence", { event: "sync" }, () => {
+        pilotoOnline = Object.values(canal.presenceState()).some((l) => l.some((m) => m.papel === "piloto"));
+      })
+      .subscribe((status) => { if (status === "SUBSCRIBED") canal.track({ papel: "vendo" }); });
+  };
+  document.head.append(s);
+  setInterval(() => {
+    if (Date.now() - ultimoDado < 3000) return;
+    const chip = $("chip");
+    chip.className = "chip"; chip.querySelector("span").textContent = pilotoOnline ? "Conectando" : "Fora do ar";
+    avisar(pilotoOnline ? "Conectando ao carro…"
+                        : "O piloto não está transmitindo agora. A página volta sozinha quando ele ligar o modo box.");
+  }, 1000);
+}
+
+if (SALA) pelaInternet();
+else if (!codigo && location.protocol === "https:") avisar("Link incompleto. Peça o link do modo box de novo ao piloto.");
+else puxar();
+</script>
+</body>
+</html>
